@@ -1,0 +1,12 @@
+{
+  "name": "playwright-bugs-form-pom",
+  "version": "1.0.0",
+  "description": "Playwright TypeScript automation for QA Practice Bugs Form (POM Version)",
+  "scripts": {
+    "test": "npx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "typescript": "^5.4.0"
+  }
+}
