@@ -1,63 +1,102 @@
 import { test, expect } from '@playwright/test';
 import { BugsFormPage } from '../pages/BugsFormPage';
 
-test.describe('Bugs Form (POM) — QA Practice', () => {
-  let form: BugsFormPage;
+test.describe('QA Practice - Bugs Form Tests', () => {
+  let bugsFormPage: BugsFormPage;
+
+  const validFormData = {
+    firstName: 'John',
+    lastName: 'Doe',
+    phone: '09171234567',
+    country: 'Philippines',
+    email: 'john.doe@example.com',
+    password: 'Password123!',
+  };
 
   test.beforeEach(async ({ page }) => {
-    form = new BugsFormPage(page);
-    await form.goto();
+    bugsFormPage = new BugsFormPage(page);
+    await page.goto('https://qa-practice.netlify.app/bugs-form');
   });
 
-  test('should validate required fields when empty', async () => {
-    await form.submit();
+  test('should successfully submit form with valid details', async ({ page }) => {
+    await bugsFormPage.fillForm(validFormData);
 
-    expect(await form.isValidField(form.firstName)).toBe(false);
-    expect(await form.isValidField(form.lastName)).toBe(false);
-    expect(await form.isValidField(form.phone)).toBe(false);
-    expect(await form.isValidField(form.email)).toBe(false);
-    expect(await form.isValidField(form.password)).toBe(false);
+    // terms checkbox is disabled, so skip interaction
+    await bugsFormPage.clickRegister();
+
+    // verify success message or navigation
+    const message = await bugsFormPage.getErrorMessage();
+    expect(message).toContain('Success');
   });
 
-  test('should validate phone number length', async () => {
-    await form.phone.fill('12345');
-    await form.submit();
-    expect(await form.isValidField(form.phone)).toBe(false);
+  test('should show error for missing required fields', async ({ page }) => {
+    await bugsFormPage.clickRegister();
 
-    await form.phone.fill('09123456789');
-    expect(await form.isValidField(form.phone)).toBe(true);
+    const message = await bugsFormPage.getErrorMessage();
+    expect(message).toContain('The password should contain between [6,20] characters!');
   });
 
-  test('should require terms acceptance before submit', async () => {
-    await form.fillBasicInfo({
-      firstName: 'John',
-      lastName: 'Doe',
-      phone: '09123456789',
-      email: 'john@example.com',
-      password: '123456',
-      country: 'Philippines',
-      acceptTerms: false
-    });
-
-    await form.submit();
-    expect(await form.terms.isChecked()).toBe(false);
-
-    await form.terms.check();
-    expect(await form.terms.isChecked()).toBe(true);
-  });
-
-  test('should submit successfully with valid data', async () => {
-    await form.fillBasicInfo({
+  test('should show error for short password', async ({ page }) => {
+    await bugsFormPage.fillForm({
       firstName: 'Alice',
-      lastName: 'Tester',
-      phone: '09123456789',
-      email: 'alice.tester@example.com',
-      password: 'secret123',
+      lastName: 'Brown',
+      phone: '09181231234',
       country: 'Philippines',
-      acceptTerms: true
+      email: 'alice@example.com',
+      password: '123',
     });
 
-    await form.submit();
-    expect(await form.isValidField(form.email)).toBe(true);
+    await bugsFormPage.clickRegister();
+
+    const message = await bugsFormPage.getErrorMessage();
+    expect(message).toContain('The password should contain between [6,20] characters!');
+  });
+
+  test('should show error for invalid phone number', async ({ page }) => {
+    await bugsFormPage.fillForm({
+      firstName: 'Bob',
+      lastName: 'Marley',
+      phone: 'abcde',
+      country: 'Philippines',
+      email: 'bob@example.com',
+      password: 'Password123!',
+    });
+
+    await bugsFormPage.clickRegister();
+
+    const message = await bugsFormPage.getErrorMessage();
+    expect(message).toContain('The phone number should contain at least 10 characters!');
+  });
+
+  test('should detect label typo in Phone number field', async ({ page }) => {
+    const phoneLabel = await page.locator('label[for="lastName"]').nth(1).textContent();
+    expect(phoneLabel).toContain('nunber');
+  });
+
+  test('should detect mismatch between entered and displayed Last Name', async ({ page }) => {
+    await bugsFormPage.fillForm(validFormData);
+    await bugsFormPage.clickRegister();
+
+    const displayedLastName = await page.locator('#resultLn').textContent();
+    expect(displayedLastName?.trim()).not.toContain(validFormData.lastName);
+    expect(displayedLastName?.trim()).toContain('Do'); // known wrong value
+  });
+
+  test('should detect mismatch between entered and displayed Phone Number', async ({ page }) => {
+    await bugsFormPage.fillForm(validFormData);
+    await bugsFormPage.clickRegister();
+
+    const displayedPhone = await page.locator('#resultPhone').textContent();
+    expect(displayedPhone?.trim()).not.toContain(validFormData.phone);
+    expect(displayedPhone?.trim()).toContain('09171234568'); // known wrong value
+  });
+
+  test('should detect mismatch between entered and displayed Country', async ({ page }) => {
+    await bugsFormPage.fillForm(validFormData);
+    await bugsFormPage.clickRegister();
+
+    const displayedCountry = await page.locator('#country').textContent();
+    expect(displayedCountry?.trim()).not.toContain(validFormData.country);
+    expect(displayedCountry?.trim()).toContain('Phillipines'); // known wrong spelling
   });
 });

@@ -1,56 +1,51 @@
-import { Locator, Page } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 
 export class BugsFormPage {
   readonly page: Page;
   readonly firstName: Locator;
   readonly lastName: Locator;
   readonly phone: Locator;
+  readonly country: Locator;
   readonly email: Locator;
   readonly password: Locator;
-  readonly country: Locator;
   readonly terms: Locator;
   readonly registerBtn: Locator;
+  readonly message: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.firstName = page.getByLabel(/First Name/i);
-    this.lastName = page.getByLabel(/Last Name/i);
-    this.phone = page.getByLabel(/Phone/i);
-    this.email = page.getByLabel(/Email address/i);
-    this.password = page.getByLabel(/Password/i);
-    this.country = page.locator('select');
-    this.terms = page.locator('input[type="checkbox"]');
-    this.registerBtn = page.locator('button:has-text("Register")');
+    this.firstName = page.locator('#firstName');
+    this.lastName = page.locator('#lastName');
+    this.phone = page.locator('#phone');
+    this.country = page.locator('#countries_dropdown_menu');
+    this.email = page.locator('#emailAddress');
+    this.password = page.locator('#password');
+    this.terms = page.locator('#exampleCheck1');
+    this.registerBtn = page.locator('#registerBtn');
+    this.message = page.locator('#message');
   }
 
-  async goto() {
-    await this.page.goto('https://qa-practice.netlify.app/bugs-form');
-  }
-
-  async fillBasicInfo(data: {
+  async fillForm(data: {
     firstName: string;
     lastName: string;
     phone: string;
+    country: string;
     email: string;
     password: string;
-    country?: string;
-    acceptTerms?: boolean;
   }) {
-    const { firstName, lastName, phone, email, password, country, acceptTerms } = data;
-    await this.firstName.fill(firstName);
-    await this.lastName.fill(lastName);
-    await this.phone.fill(phone);
-    await this.email.fill(email);
-    await this.password.fill(password);
-    if (country) await this.country.selectOption({ label: country });
-    if (acceptTerms) await this.terms.check();
+    await this.firstName.fill(data.firstName);
+    await this.lastName.fill(data.lastName);
+    await this.phone.fill(data.phone);
+    await this.country.selectOption({ label: data.country });
+    await this.email.fill(data.email);
+    await this.password.fill(data.password);
   }
 
-  async submit() {
+  async clickRegister() {
     await this.registerBtn.click();
   }
 
-  async isValidField(locator: Locator) {
-    return await locator.evaluate((el: HTMLInputElement | HTMLSelectElement) => el.checkValidity());
+  async getErrorMessage() {
+    return this.message.textContent();
   }
 }
